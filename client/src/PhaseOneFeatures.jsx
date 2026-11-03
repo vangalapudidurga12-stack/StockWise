@@ -1,0 +1,25 @@
+import React,{useMemo,useState} from "react";
+import AddProduct from "./AddProduct.jsx";
+import {API,authHeaders} from "./api";
+export default function PhaseOneFeatures({products=[],onProductAdded,onProductUpdated}){
+ const [search,setSearch]=useState(""),[filter,setFilter]=useState("all"),[saleProduct,setSaleProduct]=useState(""),[saleQuantity,setSaleQuantity]=useState(1),[saleMessage,setSaleMessage]=useState(""),[saleError,setSaleError]=useState("");
+ const low=products.filter(p=>Number(p.quantity)>0&&Number(p.quantity)<=Number(p.safetyStock??10));
+ const out=products.filter(p=>Number(p.quantity)<=0);
+ const units=products.reduce((s,p)=>s+Number(p.quantity||0),0);
+ const value=products.reduce((s,p)=>s+Number(p.quantity||0)*Number(p.unitPrice||0),0);
+ const filtered=useMemo(()=>products.filter(p=>{const q=search.toLowerCase();const matches=[p.productName,p.sku,p.category].some(v=>String(v||"").toLowerCase().includes(q));return matches&&(filter==="all"||(filter==="low"&&Number(p.quantity)>0&&Number(p.quantity)<=Number(p.safetyStock??10))||(filter==="out"&&Number(p.quantity)<=0));}),[products,search,filter]);
+ async function recordSale(e){e.preventDefault();setSaleError("");setSaleMessage("");try{const r=await fetch(`${API}/api/sales/${saleProduct}`,{method:"POST",headers:{"Content-Type":"application/json",...authHeaders()},body:JSON.stringify({quantity:Number(saleQuantity)})});const d=await r.json();if(!r.ok)throw new Error(d.message);setSaleMessage(d.message);setSaleQuantity(1);onProductUpdated?.();}catch(x){setSaleError(x.message);}}
+ return <section className="phase-one">
+  <div className="phase-top"><div><p className="eyebrow">PHASE 1 · INVENTORY OVERVIEW</p><h2>Inventory at a glance</h2><p className="muted">Search products, monitor stock, and record sales.</p></div><div className="quick-actions"><AddProduct onProductAdded={onProductAdded}/><a className="secondary button-link" href="#record-sale">Record sale</a></div></div>
+  <div className="search-row"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by product name, SKU, or category..."/></div>
+  <div className="stats-grid">
+   <button className={`stat-card ${filter==="all"?"selected":""}`} onClick={()=>setFilter("all")}><span>Total products</span><strong>{products.length}</strong><small>View all inventory</small></button>
+   <button className="stat-card" onClick={()=>setFilter("all")}><span>Total stock units</span><strong>{units}</strong><small>Units currently available</small></button>
+   <button className={`stat-card ${filter==="low"?"selected":""}`} onClick={()=>setFilter("low")}><span>Low stock</span><strong>{low.length}</strong><small>At or below safety stock</small></button>
+   <button className={`stat-card ${filter==="out"?"selected":""}`} onClick={()=>setFilter("out")}><span>Out of stock</span><strong>{out.length}</strong><small>Unavailable products</small></button>
+   <div className="stat-card value-card"><span>Total stock value</span><strong>₹{value.toLocaleString("en-IN",{maximumFractionDigits:2})}</strong><small>Quantity × unit price</small></div>
+  </div>
+  <form id="record-sale" className="sale-panel" onSubmit={recordSale}><div><h3>Record a sale</h3><p className="muted">Choose a product and quantity to reduce inventory.</p></div><select required value={saleProduct} onChange={e=>setSaleProduct(e.target.value)}><option value="">Select product</option>{products.map(p=><option key={p._id} value={p._id} disabled={Number(p.quantity)<=0}>{p.productName} (Available: {p.quantity})</option>)}</select><input type="number" min="1" step="1" required value={saleQuantity} onChange={e=>setSaleQuantity(e.target.value)}/><button className="primary" disabled={!saleProduct}>Save sale</button>{saleMessage&&<p className="success">{saleMessage}</p>}{saleError&&<p className="error">{saleError}</p>}</form>
+  <div className="inventory-panel"><div className="panel-heading"><h3>Inventory</h3><span>{filtered.length} products</span></div><div className="filter-row"><button className={filter==="all"?"filter-active":""} onClick={()=>setFilter("all")}>All</button><button className={filter==="low"?"filter-active":""} onClick={()=>setFilter("low")}>Low stock</button><button className={filter==="out"?"filter-active":""} onClick={()=>setFilter("out")}>Out of stock</button></div><div className="table-scroll"><table><thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Quantity</th><th>Unit price</th><th>Status</th></tr></thead><tbody>{filtered.map(p=><tr key={p._id}><td>{p.productName}</td><td>{p.sku}</td><td>{p.category}</td><td>{p.quantity}</td><td>₹{Number(p.unitPrice||0).toFixed(2)}</td><td><span className={`status ${Number(p.quantity)<=0?"status-out":Number(p.quantity)<=Number(p.safetyStock??10)?"status-low":"status-good"}`}>{Number(p.quantity)<=0?"Out of stock":Number(p.quantity)<=Number(p.safetyStock??10)?"Low stock":"In stock"}</span></td></tr>)}</tbody></table>{filtered.length===0&&<p className="empty">No matching products found.</p>}</div></div>
+ </section>;
+}

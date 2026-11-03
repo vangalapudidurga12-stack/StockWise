@@ -1,0 +1,9 @@
+import React,{useState} from "react";
+import {API,authHeaders} from "./api";
+const initial={productName:"",sku:"",category:"General",quantity:"",unitPrice:"",safetyStock:5,leadTimeDays:7,targetStock:20,expiryDate:"",lastSaleDate:"",supplierName:""};
+export default function AddProduct({onProductAdded}) {
+ const [open,setOpen]=useState(false),[form,setForm]=useState(initial),[error,setError]=useState("");
+ function change(e){setForm({...form,[e.target.name]:e.target.value});}
+ async function submit(e){e.preventDefault();setError("");try{const r=await fetch(`${API}/api/products`,{method:"POST",headers:{"Content-Type":"application/json",...authHeaders()},body:JSON.stringify(form)});const d=await r.json();if(!r.ok)throw new Error(d.message);setForm(initial);setOpen(false);onProductAdded?.();}catch(x){setError(x.message);}}
+ return <><button className="primary" onClick={()=>setOpen(true)}>+ Add Product</button>{open&&<div className="modal-backdrop"><form className="modal" onSubmit={submit}><div className="modal-head"><h2>Add product</h2><button type="button" className="icon-button" onClick={()=>setOpen(false)}>×</button></div>{error&&<p className="error">{error}</p>}<div className="form-grid">{Object.entries({productName:"Product name",sku:"SKU",category:"Category",quantity:"Quantity",unitPrice:"Unit price",safetyStock:"Safety stock",leadTimeDays:"Lead time (days)",targetStock:"Target stock",expiryDate:"Expiry date",lastSaleDate:"Last sale date",supplierName:"Supplier"}).map(([name,label])=><label key={name}>{label}<input name={name} type={name.toLowerCase().includes("date")?"date":"text"} required={["productName","sku","quantity"].includes(name)} value={form[name]} onChange={change}/></label>)}</div><div className="modal-actions"><button type="button" className="secondary" onClick={()=>setOpen(false)}>Cancel</button><button className="primary">Save product</button></div></form></div>}</>;
+}

@@ -1,0 +1,15 @@
+import React,{useEffect,useState} from "react";
+import { Link } from "react-router-dom";
+import { API,authHeaders } from "./api";
+function today(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+export default function HistoryPage(){
+ const [date,setDate]=useState(today()),[sales,setSales]=useState({sales:[],summary:{count:0,units:0,revenue:0}}),[moves,setMoves]=useState([]),[error,setError]=useState("");
+ async function load(){setError("");try{const headers=authHeaders();const [a,b]=await Promise.all([fetch(`${API}/api/sales?date=${date}`,{headers}),fetch(`${API}/api/stock-history?date=${date}`,{headers})]);const ad=await a.json(),bd=await b.json();if(!a.ok)throw new Error(ad.message);if(!b.ok)throw new Error(bd.message);setSales(ad);setMoves(bd);}catch(e){setError(e.message||"Unable to load daily history.");}}
+ useEffect(()=>{load();},[date]);
+ return <main className="dashboard-main"><div className="welcome"><div><p className="eyebrow">STOCKWISE REPORTS</p><h1>Day-wise history</h1><p>Sales and stock movements for the selected date.</p></div><div><Link to="/dashboard">Dashboard</Link> · <Link to="/products">Manage products</Link> · <Link to="/import">Import Excel</Link></div></div>
+ <label>Select date <input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>{error&&<p className="error">{error}</p>}
+ <div className="stats-grid"><div className="stat-card"><span>Sales transactions</span><strong>{sales.summary.count}</strong></div><div className="stat-card"><span>Units sold</span><strong>{sales.summary.units}</strong></div><div className="stat-card"><span>Sales revenue</span><strong>₹{Number(sales.summary.revenue).toFixed(2)}</strong></div><div className="stat-card"><span>Stock movements</span><strong>{moves.length}</strong></div></div>
+ <section className="inventory-panel"><div className="panel-heading"><h3>Sales for {date}</h3></div><div className="table-scroll"><table><thead><tr><th>Time</th><th>Product</th><th>SKU</th><th>Quantity</th><th>Unit price</th><th>Total</th></tr></thead><tbody>{sales.sales.map(s=><tr key={s._id}><td>{new Date(s.soldAt).toLocaleTimeString()}</td><td>{s.productName}</td><td>{s.sku}</td><td>{s.quantity}</td><td>₹{s.unitPrice.toFixed(2)}</td><td>₹{s.total.toFixed(2)}</td></tr>)}</tbody></table>{!sales.sales.length&&<p className="empty">No sales recorded on this date.</p>}</div></section>
+ <section className="inventory-panel"><div className="panel-heading"><h3>Stock movements</h3></div><div className="table-scroll"><table><thead><tr><th>Time</th><th>Product</th><th>Type</th><th>Change</th><th>Quantity after</th><th>Note</th></tr></thead><tbody>{moves.map(m=><tr key={m._id}><td>{new Date(m.createdAt).toLocaleTimeString()}</td><td>{m.productName}</td><td>{m.type}</td><td>{m.change>0?`+${m.change}`:m.change}</td><td>{m.quantityAfter??"—"}</td><td>{m.note}</td></tr>)}</tbody></table>{!moves.length&&<p className="empty">No stock movements recorded on this date.</p>}</div></section>
+ </main>;
+}
