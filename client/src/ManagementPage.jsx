@@ -7,8 +7,9 @@ import React, {
 } from "react";
 
 import { Link } from "react-router-dom";
+import { API } from "./api";
 
-const API_URL = "http://localhost:5000";
+const API_URL = API;
 
 /* =========================================================
    HELPER FUNCTIONS

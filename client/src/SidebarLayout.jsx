@@ -3,8 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar.jsx";
 import "./SidebarLayout.css";
-
-const API_URL = "http://localhost:5000";
+import { API } from "./api";
+const API_URL = API;
 
 function getProducts(data) {
   return Array.isArray(data) ? data : data?.products || [];
