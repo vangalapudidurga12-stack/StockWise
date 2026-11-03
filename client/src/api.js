@@ -1,4 +1,7 @@
-export const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+export const API =
+  import.meta.env.VITE_API_URL ||
+  "https://stockwise-backend-m8aw.onrender.com";
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -19,7 +22,6 @@ function normalizeEndpoint(endpoint) {
     path = `/${path}`;
   }
 
-  // Server routes all live under /api, so add it if a component forgot it
   if (!path.startsWith("/api/") && path !== "/api") {
     path = `/api${path}`;
   }
@@ -46,7 +48,10 @@ export async function apiRequest(endpoint, options = {}) {
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timer = setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS
+  );
 
   try {
     const response = await fetch(`${API}${path}`, {
@@ -68,7 +73,6 @@ export async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      // Expired or invalid token: clear it and send the user back to login
       const isAuthRoute = path.startsWith("/api/auth/");
 
       if (response.status === 401 && token && !isAuthRoute) {
@@ -86,7 +90,9 @@ export async function apiRequest(endpoint, options = {}) {
     console.error("StockWise API error:", error);
 
     if (error.name === "AbortError") {
-      throw new Error("The server took too long to respond. Please try again.");
+      throw new Error(
+        "The server took too long to respond. Please try again."
+      );
     }
 
     if (error instanceof TypeError) {
@@ -101,13 +107,19 @@ export async function apiRequest(endpoint, options = {}) {
   }
 }
 
-// Optional shortcuts, use them or ignore them
 export const get = (endpoint) => apiRequest(endpoint);
 
 export const post = (endpoint, body) =>
-  apiRequest(endpoint, { method: "POST", body: JSON.stringify(body) });
+  apiRequest(endpoint, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 
 export const put = (endpoint, body) =>
-  apiRequest(endpoint, { method: "PUT", body: JSON.stringify(body) });
+  apiRequest(endpoint, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 
-export const del = (endpoint) => apiRequest(endpoint, { method: "DELETE" });
+export const del = (endpoint) =>
+  apiRequest(endpoint, { method: "DELETE" });
